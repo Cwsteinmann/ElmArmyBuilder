@@ -1,6 +1,6 @@
 module Main exposing (..)
 
-
+--import View exposing (view)
 import Units exposing (..)
 import Html exposing (..)
 import Html.App as Html
@@ -54,7 +54,6 @@ model =
   , hs3 = emptyUnit
   , totalCost = 0
   }
-
 
 
 view : Model -> Html Msg
@@ -143,7 +142,28 @@ view model =
             , button [type' "button", onClick (ChangeT1 emptyUnit)] [text "Remove this unit"]
             ]
 
+      emptyTroop2View =
+        div [] [
+          p [] [ text "Empty Troop Slot"]
+          , div [] [
+             button [type' "button", onClick (ChangeT2 termagant1)] [text "Add Termagant Squad"]
+          ]
+        ]
 
+      troop2View : Unit -> Html Msg
+      troop2View unit =
+          div []
+            [ h2 []
+                [ text ((toString unit.currentSize) ++ " " ++ unit.name) ]
+            , h3 []
+                [ text (toString unit.totalCost ++ " points") ]
+            , p [] []
+            , button [type' "button", onClick (AlterT2 unit 1)] [text "Add Units"]
+            , button [type' "button", onClick (AlterT2 unit 2)] [text "Remove Units"]
+
+            , br [] []
+            , button [type' "button", onClick (ChangeT2 emptyUnit)] [text "Remove this unit"]
+            ]
 
 
       troop1UnitView =
@@ -151,6 +171,12 @@ view model =
           emptyTroop1View
         else
           troop1View model.t1
+
+      troop2UnitView =
+        if model.t2 == emptyUnit then
+          emptyTroop2View
+        else
+          troop2View model.t2
 
 
     in
@@ -169,7 +195,10 @@ view model =
         , hr [] []
         , br [] []
         , troop1UnitView
+        , br [] []
+        , troop2UnitView
         ]
+
 
 changeNumUnit : Unit -> Int -> Unit
 changeNumUnit unit num =
@@ -198,6 +227,7 @@ type Msg =
   | ChangeHS2 Unit
   | ChangeHS3 Unit
   | AlterT1 Unit Int
+  | AlterT2 Unit Int
 
 
 
@@ -303,26 +333,63 @@ update msg model =
           in { updatedModel | totalCost = getValue updatedModel }
 
       AlterT1 unit num ->
-        if num == 1 then
-            if unit.currentSize >= unit.maxSize then
-              let updatedModel = { model | t1 = changeNumUnit unit unit.maxSize }
-                  updatedModel2 = { updatedModel | t1 = updateCost updatedModel.t1}
-              in { updatedModel2 | totalCost = getValue updatedModel2 }
-            else
-              let updatedModel = { model | t1 = changeNumUnit unit ( unit.currentSize + 1 ) }
-                  updatedModel2 = { updatedModel | t1 = updateCost updatedModel.t1}
-              in { updatedModel2 | totalCost = getValue updatedModel2 }
-        else
-            if unit.currentSize <= unit.initialSize then
-              let updatedModel = { model | t1 = changeNumUnit unit unit.initialSize }
-                  updatedModel2 = { updatedModel | t1 = updateCost updatedModel.t1}
-              in { updatedModel2 | totalCost = getValue updatedModel2 }
-            else
-              let updatedModel = { model | t1 = changeNumUnit unit ( unit.currentSize - 1 ) }
-                  updatedModel2 = { updatedModel | t1 = updateCost updatedModel.t1}
-              in { updatedModel2 | totalCost = getValue updatedModel2 }
+        alterModel
+            model
+            num
+            (\unit model -> { model | t1 = unit })
+            (\model -> model.t1)
+
+      AlterT2 unit num ->
+        alterModel
+            model
+            num
+            (\unit model -> { model | t2 = unit })
+            (\model -> model.t2)
 
 
+
+alterModel model sizeIncrement updateUnit getUnit =
+    let
+        size =
+            unit.currentSize + sizeIncrement
+
+        newSize =
+            if size >= unit.maxSize then
+                unit.maxSize
+            else if size <= unit.initialSize
+                unit.initialSize
+            else
+                size
+    in 
+        model
+          |> updateUnit (changeNumUnit unit newSize)
+          |> updateUnit (updateCost (getUnit updatedModel))
+          |> updateTotalCost
+
+
+updateTotalCost model =
+    { model | totalCost = getValue model }
+
+alterTModel model unit sizeIncrement =
+    let
+        size =
+            unit.currentSize + sizeIncrement
+
+        newSize =
+            if size >= unit.maxSize then
+                unit.maxSize
+            else if size <= unit.initialSize
+                unit.initialSize
+            else
+                size
+
+        updatedModel =
+            { model | t1 = changeNumUnit unit newSize }
+
+        updatedModel2 =
+            { updatedModel | t1 = updateCost updatedModel.t1}
+    in
+        { updatedModel2 | totalCost = getValue updatedModel2 }
 
 
 
